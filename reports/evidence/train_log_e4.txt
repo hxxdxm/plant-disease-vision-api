@@ -1,0 +1,22 @@
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+클래스: ['angular_leaf_spot', 'bean_rust', 'healthy'] / Train: 1034, Val: 133
+Some weights of ResNetForImageClassification were not initialized from the model checkpoint at microsoft/resnet-18 and are newly initialized because the shapes did not match:
+- classifier.1.bias: found shape torch.Size([1000]) in the checkpoint and torch.Size([3]) in the model instantiated
+- classifier.1.weight: found shape torch.Size([1000, 512]) in the checkpoint and torch.Size([3, 512]) in the model instantiated
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+{'epoch': 1, 'phase': 'head-only', 'loss': 1.0029, 'val_accuracy': 0.7068, 'val_loss': 0.7051, 'lr_head_end': 0.001}
+{'epoch': 2, 'phase': 'head-only', 'loss': 0.7109, 'val_accuracy': 0.7293, 'val_loss': 0.598, 'lr_head_end': 0.00098766}
+{'epoch': 3, 'phase': 'full', 'loss': 0.4149, 'val_accuracy': 0.9624, 'val_loss': 0.1129, 'lr_head_end': 0.00095086}
+{'epoch': 4, 'phase': 'full', 'loss': 0.2887, 'val_accuracy': 0.9398, 'val_loss': 0.151, 'lr_head_end': 0.00089145}
+{'epoch': 5, 'phase': 'full', 'loss': 0.2613, 'val_accuracy': 0.9474, 'val_loss': 0.0893, 'lr_head_end': 0.00081242}
+{'epoch': 6, 'phase': 'full', 'loss': 0.2112, 'val_accuracy': 0.9699, 'val_loss': 0.0931, 'lr_head_end': 0.00071772}
+{'epoch': 7, 'phase': 'full', 'loss': 0.2045, 'val_accuracy': 0.9624, 'val_loss': 0.0768, 'lr_head_end': 0.0006121}
+{'epoch': 8, 'phase': 'full', 'loss': 0.1375, 'val_accuracy': 0.9624, 'val_loss': 0.0808, 'lr_head_end': 0.00050086}
+{'epoch': 9, 'phase': 'full', 'loss': 0.1275, 'val_accuracy': 0.9248, 'val_loss': 0.1355, 'lr_head_end': 0.00038958}
+{'epoch': 10, 'phase': 'full', 'loss': 0.1319, 'val_accuracy': 0.9699, 'val_loss': 0.0615, 'lr_head_end': 0.00028384}
+{'epoch': 11, 'phase': 'full', 'loss': 0.1013, 'val_accuracy': 0.9699, 'val_loss': 0.0633, 'lr_head_end': 0.00018893}
+{'epoch': 12, 'phase': 'full', 'loss': 0.1323, 'val_accuracy': 0.985, 'val_loss': 0.0559, 'lr_head_end': 0.00010962}
+{'epoch': 13, 'phase': 'full', 'loss': 0.0846, 'val_accuracy': 0.985, 'val_loss': 0.0619, 'lr_head_end': 4.989e-05}
+{'epoch': 14, 'phase': 'full', 'loss': 0.0974, 'val_accuracy': 0.9774, 'val_loss': 0.0443, 'lr_head_end': 1.273e-05}
+{'epoch': 15, 'phase': 'full', 'loss': 0.1211, 'val_accuracy': 0.985, 'val_loss': 0.0804, 'lr_head_end': 0.0}
+저장 완료: artifacts/e4_lpft_aug_cosine / best epoch=12 val accuracy=0.9850 val loss=0.0559
