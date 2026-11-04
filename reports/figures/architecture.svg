@@ -1,0 +1,109 @@
+<svg id="s" width="1280" height="790" viewBox="0 0 1280 790" xmlns="http://www.w3.org/2000/svg">
+  <style>
+  body{margin:0;background:#fff}
+  svg{font-family:'Noto Sans CJK KR','Noto Sans KR',sans-serif}
+  .box{fill:#fff;stroke:#c9d1d9;stroke-width:1.5}
+  .title{font-size:17px;font-weight:700;fill:#1f2328}
+  .sub{font-size:12.5px;fill:#57606a}
+  .lbl{font-size:12.5px;font-weight:600}
+  .blue{stroke:#2563eb;fill:none;stroke-width:2.4}
+  .orng{stroke:#ea7a0c;fill:none;stroke-width:2.4}
+  .grey{stroke:#8c959f;fill:none;stroke-width:1.8;stroke-dasharray:6 5}
+  .tb{fill:#1d4ed8}.to{fill:#c2410c}.tg{fill:#57606a}
+  .halo{paint-order:stroke;stroke:#f3f8ff;stroke-width:5px;stroke-linejoin:round}
+</style>
+  <defs>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea7a0c"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/></marker>
+  </defs>
+
+  <g transform="translate(40,30)">
+    <line x1="0" y1="8" x2="34" y2="8" class="blue" marker-end="url(#ab)"/><text x="44" y="13" class="lbl tb">동기 요청</text>
+    <line x1="130" y1="8" x2="164" y2="8" class="orng" marker-end="url(#ao)"/><text x="174" y="13" class="lbl to">비동기 요청 (①~⑧ 순서)</text>
+    <line x1="370" y1="8" x2="404" y2="8" class="grey" marker-end="url(#ag)"/><text x="414" y="13" class="lbl tg">캐시 · 파일 공유</text>
+  </g>
+
+  <rect x="290" y="70" width="950" height="530" rx="16" fill="#f3f8ff" stroke="#9cc3f5" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <text x="312" y="98" class="lbl" fill="#1d63c4">🐳 Docker Compose · 4개 컨테이너</text>
+
+  <rect x="40" y="120" width="190" height="190" rx="12" class="box" style="fill:#f6f8fa"/>
+  <text x="135" y="178" text-anchor="middle" class="title">🖥️ 브라우저</text>
+  <text x="135" y="206" text-anchor="middle" class="sub">/vision/sync/</text>
+  <text x="135" y="226" text-anchor="middle" class="sub">/vision/async/</text>
+  <text x="135" y="246" text-anchor="middle" class="sub">curl · Swagger</text>
+
+  <rect x="330" y="120" width="300" height="190" rx="12" class="box"/>
+  <text x="350" y="152" class="title">web · FastAPI</text>
+  <text x="350" y="174" class="sub">Uvicorn :8000 · 입력 검증(400 · 413)</text>
+  <rect x="350" y="194" width="260" height="96" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="480" y="224" text-anchor="middle" class="lbl" fill="#9a3412">🧠 ResNet18 (Fine-tuned)</text>
+  <text x="480" y="248" text-anchor="middle" class="sub">동기 요청은 여기서 바로 추론</text>
+  <text x="480" y="268" text-anchor="middle" class="sub">첫 요청 ≈2.3초 · 이후 ≈20ms</text>
+
+  <line x1="232" y1="150" x2="328" y2="150" class="blue" marker-end="url(#ab)"/>
+  <text x="280" y="142" text-anchor="middle" class="lbl tb">POST sync</text>
+  <line x1="328" y1="174" x2="232" y2="174" class="blue" marker-end="url(#ab)"/>
+  <text x="280" y="192" text-anchor="middle" class="lbl tb">200 결과</text>
+  <line x1="232" y1="222" x2="328" y2="222" class="orng" marker-end="url(#ao)"/>
+  <text x="280" y="214" text-anchor="middle" class="lbl to">① POST async</text>
+  <line x1="328" y1="246" x2="232" y2="246" class="orng" marker-end="url(#ao)"/>
+  <text x="280" y="266" text-anchor="middle" class="lbl to">② 202 job_id</text>
+  <line x1="232" y1="296" x2="328" y2="296" class="orng" marker-start="url(#ao)" marker-end="url(#ao)"/>
+  <text x="280" y="324" text-anchor="middle" class="lbl to">⑧ 상태 조회</text>
+
+  <rect x="900" y="120" width="300" height="200" rx="12" class="box"/>
+  <text x="920" y="152" class="title">redis · Redis 7.4</text>
+  <rect x="920" y="168" width="260" height="40" rx="6" fill="#eef6ee" stroke="#9fd19f"/>
+  <text x="935" y="193" class="lbl" fill="#166534">DB 1 · 분류 결과 캐시 (TTL 600초)</text>
+  <rect x="920" y="216" width="260" height="40" rx="6" fill="#fff4e5" stroke="#f9c784"/>
+  <text x="935" y="241" class="lbl" fill="#9a3412">DB 2 · Celery 브로커 (작업 큐)</text>
+  <rect x="920" y="264" width="260" height="40" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="935" y="289" class="lbl" fill="#57606a">DB 3 · Celery 결과 백엔드</text>
+
+  <line x1="632" y1="188" x2="918" y2="188" class="grey" marker-start="url(#ag)" marker-end="url(#ag)"/>
+  <text x="775" y="180" text-anchor="middle" class="lbl tg halo">캐시 확인 · 저장 (HIT면 추론 생략)</text>
+
+  <line x1="632" y1="236" x2="918" y2="236" class="orng" marker-end="url(#ao)"/>
+  <text x="775" y="228" text-anchor="middle" class="lbl to halo">④ 작업 큐 등록 (job_id)</text>
+
+  <rect x="900" y="400" width="300" height="170" rx="12" class="box"/>
+  <text x="920" y="432" class="title">postgres · PostgreSQL 17</text>
+  <rect x="920" y="450" width="260" height="100" rx="6" fill="#f0f4ff" stroke="#a9bdf5"/>
+  <text x="935" y="476" class="lbl" fill="#1e3a8a">🗃️ image_jobs</text>
+  <text x="935" y="498" class="sub">status: queued → running → done</text>
+  <text x="935" y="517" class="sub">top1 · 점수 · inference_ms · cache_hit</text>
+  <text x="935" y="536" class="sub">비동기 요청만 기록</text>
+
+  <polyline points="632,290 700,290 700,425 898,425" class="orng" marker-end="url(#ao)"/>
+  <text x="710" y="340" class="lbl to halo">③ queued 행 생성</text>
+  <text x="710" y="359" class="lbl to halo">⑧ 상태 · 결과 조회</text>
+
+  <rect x="330" y="400" width="300" height="170" rx="12" class="box"/>
+  <text x="350" y="432" class="title">worker · Celery</text>
+  <text x="350" y="454" class="sub">solo · concurrency 1 · classify_job</text>
+  <rect x="350" y="470" width="260" height="82" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="480" y="496" text-anchor="middle" class="lbl" fill="#9a3412">🧠 ResNet18 (web과 별도로 로드)</text>
+  <text x="480" y="518" text-anchor="middle" class="lbl to">⑥ 캐시(DB 1) 확인</text>
+  <text x="480" y="537" text-anchor="middle" class="lbl to">→ MISS면 추론</text>
+
+  <polyline points="898,246 840,246 840,455 632,455" class="orng" marker-end="url(#ao)"/>
+  <text x="652" y="447" class="lbl to halo">⑤ 작업 전달</text>
+
+  <line x1="632" y1="530" x2="898" y2="530" class="orng" marker-end="url(#ao)"/>
+  <text x="652" y="522" class="lbl to halo">⑦ running → done · 결과 기록</text>
+
+  <rect x="290" y="640" width="950" height="120" rx="16" fill="#fafafa" stroke="#d0d7de" stroke-dasharray="8 6"/>
+  <text x="312" y="668" class="lbl tg">📂 호스트 공유 폴더 (bind mount · web · worker가 같은 파일을 봄)</text>
+  <rect x="330" y="684" width="360" height="56" rx="8" class="box"/>
+  <text x="510" y="709" text-anchor="middle" class="lbl">artifacts/beans_resnet18/</text>
+  <text x="510" y="728" text-anchor="middle" class="sub">학습된 모델 파일 (.env의 MODEL_PATH)</text>
+  <rect x="740" y="684" width="360" height="56" rx="8" class="box"/>
+  <text x="920" y="709" text-anchor="middle" class="lbl">media/jobs/&lt;uuid&gt;.bin</text>
+  <text x="920" y="728" text-anchor="middle" class="sub">비동기 업로드 이미지 (web 저장 · worker 읽기)</text>
+
+  <polyline points="380,570 380,682" class="grey" marker-end="url(#ag)"/>
+  <text x="390" y="625" class="sub">모델 로드</text>
+  <polyline points="590,570 590,615 920,615 920,682" class="grey" marker-end="url(#ag)"/>
+  <text x="700" y="608" class="sub halo">이미지 파일</text>
+</svg>

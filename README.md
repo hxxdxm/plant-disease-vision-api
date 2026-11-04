@@ -126,20 +126,21 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 
 ## 🏗️ 시스템 아키텍처
 
-![architecture](reports/figures/architecture.png)
+<img src="reports/figures/architecture.png" width="960" alt="시스템 아키텍처">
 
-| 흐름 | 경로 |
-|---|---|
-| **동기** | 브라우저 → FastAPI → Redis 캐시 확인 → (MISS면) ResNet18 → 200 JSON |
-| **비동기** | 브라우저 → FastAPI(검증 · 파일 저장 · DB `queued`) → Redis 브로커 → Celery worker → 캐시/ResNet18 → DB `done` → 브라우저가 상태 조회 |
+**🔵 동기** — 브라우저가 web에 이미지를 보내면, web이 Redis 캐시를 먼저 보고 없을 때만 ResNet18로 추론해서 **결과까지 한 번에** 돌려줍니다(200).
 
-| Redis DB | 역할 |
+**🟠 비동기** — 그림의 번호 순서대로 진행됩니다.
+
+| 단계 | 하는 일 |
 |:---:|---|
-| 1 | 분류 결과 캐시 (TTL 600초) |
-| 2 | Celery 브로커 |
-| 3 | Celery 결과 백엔드 |
+| ① ② | 브라우저가 이미지를 보내면 web이 검증 · 저장 후 **바로 202와 `job_id`만** 돌려줌 |
+| ③ ④ | web이 DB에 `queued` 행을 만들고, Redis 큐(DB 2)에 작업을 등록 |
+| ⑤ ⑥ | worker가 작업을 꺼내 캐시(DB 1)를 확인하고, 없으면 ResNet18로 추론 |
+| ⑦ | worker가 DB를 `done`과 결과로 갱신 |
+| ⑧ | 브라우저가 `job_id`로 상태를 다시 물어보면 web이 DB를 조회해 응답 |
 
-모델은 web과 worker **각 프로세스에서 따로 로드**됩니다(첫 요청 약 2.3초, 이후 약 20ms). 처리 순서 → [산출물 5](reports/05_AI버튼_처리흐름.md)
+> 모델은 web과 worker가 **각자 따로 메모리에 불러옵니다**(첫 요청 약 2.3초, 이후 약 20ms). 함수 단위 처리 순서 → [산출물 5](reports/05_AI버튼_처리흐름.md) · 그림 원본 `reports/figures/architecture.svg`
 
 ## 🧰 기술 스택
 
