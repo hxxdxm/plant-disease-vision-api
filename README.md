@@ -82,8 +82,8 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 
 | 모델 | Validation (133장) | **Test (128장)** | Macro F1 (Test) | 강건성 평균 | 상태 |
 |---|---:|---:|---:|---:|---|
-| E0 제공 코드 그대로 | 0.7669 | 0.7188 | 0.7109 | 0.7031 | 필수 실험 · **현재 서비스에 연결된 모델** |
-| **E4 개선 모델** | **0.9850** | **0.9844** | **0.9845** | **0.9570** | 최종 모델 (서비스 적용 전) |
+| E0 제공 코드 그대로 | 0.7669 | 0.7188 | 0.7109 | 0.7031 | 필수 실험 · 산출물 2~7 측정에 사용 |
+| **E4 개선 모델** | **0.9850** | **0.9844** | **0.9845** | **0.9570** | **최종 모델 · 현재 서비스에 연결됨** |
 
 - **Test 기준 +26.56%p** (정답 92 → 126장). Test는 최종 모델을 Val로 정한 뒤 **한 번만** 평가했습니다.
 - E4는 Val(0.9850)과 Test(0.9844)가 거의 같아서, **Validation에 맞춰 고른 점수가 아니라는 것**도 확인했습니다.
@@ -126,7 +126,8 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 - 원인 ① **덜 학습된 것**(+17.29%p)과 ② **Backbone 고정**(학습률을 같게 두고 비교하면 +19.55%p)이 비슷하게 컸습니다.
 - 증강이 없으면 Full 학습이 epoch 1 이후 계속 나빠졌는데(과적합 신호), 증강과 코사인 학습률을 쓰자 후반까지 유지·상승했습니다. Train과 Val 차이도 2.62%p → 1.11%p로 줄었습니다.
 - **Test(0.9844)와 강건성 평가**로 최종 확인했습니다. 가장 약한 변형은 **저해상도(−7.03%p)와 흐림(−4.69%p)**으로, 작은 반점 무늬가 지워지는 조건입니다.
-- ⚠️ ④는 기법 여러 개를 한꺼번에 적용해서 각각의 효과는 아직 분리하지 못했습니다. 서비스에는 아직 E0 모델이 연결되어 있습니다.
+- **서비스 모델을 E4로 교체**하고, E0이 틀렸던 사진 2장을 동기 · 비동기로 다시 보내 둘 다 맞히는 것을 확인했습니다(산출물 9 §7단계).
+- ⚠️ ④는 기법 여러 개를 한꺼번에 적용해서 각각의 효과는 아직 분리하지 못했습니다.
 
 <img src="reports/figures/robustness_chart.png" width="900">
 
@@ -192,11 +193,11 @@ pip install -r requirements.txt
 python -m training.finetune --data dataset --output artifacts/beans_resnet18 \
   --epochs 3 --batch-size 8 --freeze-backbone
 
-cp .env.example .env        # MODEL_PATH=artifacts/beans_resnet18
+cp .env.example .env        # MODEL_PATH=artifacts/beans_resnet18 (제공 코드 기준 모델)
 ```
 
 <details>
-<summary>개선 모델 학습 · 평가 · Full Fine-tuning · GPU 없이 학습하기</summary>
+<summary>개선 모델 학습 · 평가 · 서비스 교체 · Full Fine-tuning · GPU 없이 학습하기</summary>
 
 ```bash
 # 개선 모델 (E4: LP-FT + 증강 + 코사인 학습률)
@@ -209,6 +210,10 @@ python -m training.evaluate --model artifacts/e4_lpft_aug_cosine --split test --
 
 # 강건성 평가 (밝기 · 흐림 · 노이즈 · JPEG · 저해상도 등 8가지 변형)
 python -m training.robustness --model artifacts/e4_lpft_aug_cosine --split test --out reports/data/robustness_e4.json
+
+# 서비스 모델을 개선 모델로 교체 (web · worker가 새 모델을 다시 불러옴)
+sed -i 's#^MODEL_PATH=.*#MODEL_PATH=artifacts/e4_lpft_aug_cosine#' .env
+docker compose up -d --force-recreate web worker
 
 # Backbone까지 학습 (평가가이드 선택 실험, 별도 폴더에 저장)
 python -m training.finetune --data dataset --output artifacts/beans_resnet18_full \
@@ -304,7 +309,7 @@ python scripts/measure_timings.py
 
 | 구분 | 결과 |
 |---|---|
-| 실환경 통합 테스트 | **22건 PASS** — 3클래스 분류, 202 → done, 400 · 404 · 413, 캐시 MISS → HIT, worker 정지 시 `queued` 유지 → 재시작 후 처리, Redis DB 역할, DB 스키마, Swagger |
+| 실환경 통합 테스트 | **23건 PASS** — 3클래스 분류, 202 → done, 400 · 404 · 413, 캐시 MISS → HIT, worker 정지 시 `queued` 유지 → 재시작 후 처리, Redis DB 역할, DB 스키마, Swagger |
 | 모의 테스트 | 01 `1 passed` · 02 `4 passed` (503 · `failed` 기록 포함) |
 | 학습 · 평가 코드 테스트 | `6 passed` — 지표 계산, 모든 옵션으로 학습 후 서비스 방식으로 로드, Backbone·BN 고정 확인, BN 통계 변화(약점 ③ 가설), 평가 값과 학습 기록 일치 |
 | 강건성 코드 테스트 | `4 passed` — 변형이 크기를 유지하며 실제로 바뀌는지, 노이즈 재현성, 색조 변형 제외, 평균 계산 |
@@ -355,7 +360,7 @@ plant-disease-vision-api/
 | 4 | [DB 구조 · 작업이력](reports/04_DB_구조_작업이력.md) | `image_jobs` ERD · 상태 전이 · 실제 행 |
 | 5 | [AI 버튼 처리흐름](reports/05_AI버튼_처리흐름.md) | 동기 · 비동기 시퀀스도 · 코드 대응표 |
 | 6 | [성능 비교 보고서](reports/06_성능비교_보고서.md) | 응답 시간 · 캐시 효과 · 측정 한계 |
-| 7 | [기능 테스트 · 오류 분석](reports/07_기능테스트_오류분석.md) | 테스트 22건 · 오류 9건 |
+| 7 | [기능 테스트 · 오류 분석](reports/07_기능테스트_오류분석.md) | 테스트 23건 · 오류 9건 |
 | 8 | [최종 기술보고서](reports/08_최종기술보고서.md) | 전체 요약 · OpenCV 개선 제안 · 한계 |
 | 9 | [성능 개선 실험 보고서](reports/09_성능개선_실험보고서.md) | 약점 4가지 · 실험 E0~E4 · Test · 강건성 · 논문 근거 |
 
@@ -368,14 +373,15 @@ plant-disease-vision-api/
 | `Duplicate dispatch rule for <built-in function intern>` | Ubuntu 22.04의 Python 3.11.0rc1 + 최신 torch | `torch==2.5.1`, `torchvision==0.20.1` 설치 |
 | `pytest`에서 `No module named 'ai'` | `pytest`가 현재 폴더를 import 경로에 넣지 않음 | **`python -m pytest`**로 실행 |
 | 비동기 작업이 계속 `queued` | worker 미실행 | `docker compose logs worker` 확인 후 `docker compose start worker` |
-| 1,000개 ImageNet 라벨이 나옴 | `.env`가 원본 모델을 가리킴 | `MODEL_PATH=artifacts/beans_resnet18` 후 web · worker 재생성 |
+| 1,000개 ImageNet 라벨이 나옴 | `.env`가 원본 모델을 가리킴 | `MODEL_PATH=artifacts/beans_resnet18`(또는 개선 모델 `artifacts/e4_lpft_aug_cosine`) 후 web · worker 재생성 |
 | `address already in use` | 8000 · 6379 · 5432 포트를 다른 프로그램이 사용 중 | 로컬 uvicorn 등 기존 프로그램 종료 |
 
 ## 🧭 한계와 향후 과제
 
 **한계**
 
-- 서비스에 연결된 모델은 아직 제공 코드 그대로인 E0(Val Acc 0.7669)입니다. 실제로 `bean_rust` 사진을 `healthy`로 틀린 사례가 있습니다. 개선 모델(E4, 0.9850)은 서비스에 적용하기 전입니다.
+- 산출물 2~7의 API · DB · 응답 시간 측정은 **E0으로 진행한 기록**입니다. E4로 교체한 뒤에는 동작 확인만 했고, 응답 시간은 다시 재지 않았습니다(같은 ResNet18 구조라 추론 시간은 비슷할 것으로 보지만 측정하지는 않음).
+- E4는 점수를 높게(0.99 이상) 내는 경우가 많지만, Test에서 `angular_leaf_spot_test.14.jpg`를 **0.96으로 확신하고 틀린** 사례가 있습니다. 점수가 높다고 항상 맞는 것은 아닙니다.
 - 최종 모델(E4)도 **저해상도(0.9141)와 흐림(0.9375)**에서 정확도가 떨어집니다. 멀리서 찍거나 초점이 안 맞은 사진에 약합니다.
 - Test는 128장, 한 번의 분할 · 한 개 seed 결과입니다. 데이터가 한 지역(우간다) 현장 사진이라 다른 환경에서의 성능은 알 수 없습니다.
 - 단일 사용자의 순차 요청만 측정했고, 동시 요청 처리량은 측정하지 않았습니다.
@@ -387,7 +393,8 @@ plant-disease-vision-api/
 - [x] 최종 모델(E4)을 Test 데이터로 1회 평가 (0.9844, Macro F1 0.9845)
 - [x] 강건성 평가 (평균 0.9570)
 - [ ] 흐림 · 저해상도 증강을 추가하고, 다른 변형으로 다시 공정하게 평가
-- [ ] 개선 모델을 서비스에 적용하고 다시 검증
+- [x] 개선 모델(E4)을 서비스에 적용하고 동기 · 비동기 · DB 동작 확인
+- [ ] E4 기준으로 응답 시간 재측정
 - [ ] Grad-CAM으로 오분류 원인 분석 → OpenCV HSV · 잎 ROI 규칙 실험 (설계만 완료, [산출물 8](reports/08_최종기술보고서.md) §8)
 - [ ] 동시 요청 부하 테스트
 

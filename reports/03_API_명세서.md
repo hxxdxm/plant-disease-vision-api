@@ -2,7 +2,7 @@
 
 - Base URL: `http://127.0.0.1:8000`
 - Swagger UI: `http://127.0.0.1:8000/docs`
-- 모든 응답 예시는 **실제 실행 결과**이다(2026-11-04, `MODEL_PATH=artifacts/beans_resnet18`). 긴 소수는 그대로 옮겼다.
+- 모든 응답 예시는 **실제 실행 결과**이다(2026-11-04, `MODEL_PATH=artifacts/beans_resnet18`). 이후 서비스 모델을 개선 모델로 바꿨지만 API 형식은 같다. 교체 후 응답 예시는 산출물 9 §7단계 참고. 긴 소수는 그대로 옮겼다.
 
 ## 1. API 목록
 
