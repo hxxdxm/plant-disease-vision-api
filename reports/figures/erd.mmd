@@ -1,0 +1,15 @@
+erDiagram
+    IMAGE_JOBS {
+        int id PK
+        varchar150 image_path "NOT NULL"
+        varchar20 status "default queued, index"
+        varchar255 model_id "default ''"
+        varchar200 top1_label "NULL"
+        float top1_score "NULL"
+        json all_scores "NULL"
+        float inference_ms "NULL"
+        boolean cache_hit "NULL"
+        text error_message "NULL"
+        timestamptz created_at "default UTC now"
+        timestamptz updated_at "default UTC now, onupdate"
+    }

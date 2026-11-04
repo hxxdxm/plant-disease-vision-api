@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor U as 사용자
+    participant H as async.html JS
+    participant F as router_async
+    participant P as PostgreSQL image_jobs
+    participant Q as Redis DB2 Broker
+    participant W as tasks.classify_job (worker)
+    participant C as Redis DB1 Cache / ResNet18
+    U->>H: 이미지 선택 · [Celery 작업 등록]
+    H->>F: POST /api/async/classify/
+    F->>F: 413 / load_rgb_image() 검증 → 400
+    F->>F: media/jobs/uuid.bin 저장
+    F->>P: INSERT status=queued
+    F->>Q: classify_job.delay(job_id) 실패 → failed + 503
+    F-->>H: HTTP 202 job_id · check_url
+    Q->>W: job_id 전달
+    W->>P: status=running
+    W->>C: classify_with_cache() (HIT면 추론 생략)
+    C-->>W: top1 · all · inference_ms · cache_hit
+    W->>P: status=done + 결과 (예외 시 failed + error_message)
+    loop 1초마다 최대 60회 (done/failed면 중지)
+      H->>F: GET /api/async/jobs/job_id/
+      F->>P: SELECT
+      F-->>H: status + 결과
+    end
+    H-->>U: 접수 ms / 전체 ms / 상태 표시

@@ -1,0 +1,26 @@
+flowchart LR
+    B["브라우저 / curl<br/>sync.html · async.html"]
+    subgraph DC["Docker Compose (WSL2 Ubuntu 22.04)"]
+      direction LR
+      W["web 컨테이너<br/>FastAPI · Uvicorn :8000"]
+      K["worker 컨테이너<br/>Celery solo · concurrency=1"]
+      R["redis 컨테이너<br/>DB1 Cache · DB2 Broker · DB3 Result"]
+      P[("postgres 컨테이너<br/>image_jobs")]
+    end
+    subgraph HOST["호스트 공유 폴더 (bind mount)"]
+      A["artifacts/beans_resnet18<br/>Fine-tuned ResNet18"]
+      M["media/jobs/uuid.bin"]
+    end
+    B -->|"POST /api/sync/classify/"| W
+    B -->|"POST /api/async/classify/ → 202"| W
+    B -->|"GET /api/async/jobs/id/"| W
+    W <-->|"캐시 조회·저장 DB1"| R
+    W -->|"queued 행 생성 / 상태 조회"| P
+    W -->|"업로드 저장"| M
+    W -->|"classify_job.delay → DB2"| R
+    R -->|"작업 전달"| K
+    K <-->|"캐시 조회·저장 DB1"| R
+    K -->|"이미지 읽기"| M
+    K -->|"running → done/failed"| P
+    A -.->|"web 프로세스 모델 로드"| W
+    A -.->|"worker 프로세스 모델 로드"| K

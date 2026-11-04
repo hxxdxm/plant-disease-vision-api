@@ -1,0 +1,27 @@
+sequenceDiagram
+    actor U as 사용자
+    participant H as sync.html JS
+    participant F as router_sync.classify_sync()
+    participant C as cache_service.classify_with_cache()
+    participant R as Redis DB1
+    participant S as services.classify_image_bytes()
+    participant M as hf_model.get_classifier()
+    U->>H: 이미지 선택 · [동기 분류] 클릭
+    H->>F: POST /api/sync/classify/ (multipart image)
+    F->>F: 5MB 초과 → 413
+    F->>C: classify_with_cache(image_bytes)
+    C->>R: GET vision:classify:모델해시:이미지sha256
+    alt Cache HIT
+      R-->>C: 저장된 JSON
+      C-->>F: cache_hit=true, inference_ms=null
+    else Cache MISS
+      C->>S: classify_image_bytes()
+      S->>S: load_rgb_image() 검증 실패 → InvalidImage → 400
+      S->>M: pipeline(image, top_k=5)
+      M-->>S: 3클래스 점수
+      S-->>C: top1 · all · inference_ms
+      C->>R: SETEX 600초
+      C-->>F: cache_hit=false
+    end
+    F-->>H: HTTP 200 + JSON
+    H-->>U: HTTP 상태 · 응답시간 · JSON 표시
