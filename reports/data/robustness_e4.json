@@ -1,0 +1,86 @@
+{
+  "model": "artifacts/e4_lpft_aug_cosine",
+  "split": "test",
+  "total": 128,
+  "clean_accuracy": 0.9844,
+  "robust_mean_all": 0.957,
+  "robust_mean_seen": 0.9668,
+  "robust_mean_unseen": 0.9473,
+  "worst": [
+    "low_res",
+    0.9141
+  ],
+  "per_corruption": {
+    "clean": {
+      "desc": "원본",
+      "seen_in_training": null,
+      "accuracy": 0.9844,
+      "macro_f1": 0.9845,
+      "correct": 126
+    },
+    "dark": {
+      "desc": "어둡게 (밝기 x0.6)",
+      "seen_in_training": true,
+      "accuracy": 0.9609,
+      "macro_f1": 0.9612,
+      "correct": 123,
+      "drop_pp": 2.35
+    },
+    "bright": {
+      "desc": "밝게 (밝기 x1.4)",
+      "seen_in_training": true,
+      "accuracy": 0.9609,
+      "macro_f1": 0.9607,
+      "correct": 123,
+      "drop_pp": 2.35
+    },
+    "low_contrast": {
+      "desc": "저대비 (대비 x0.6)",
+      "seen_in_training": true,
+      "accuracy": 0.9688,
+      "macro_f1": 0.969,
+      "correct": 124,
+      "drop_pp": 1.56
+    },
+    "rotate30": {
+      "desc": "회전 30도 (학습은 ±20도)",
+      "seen_in_training": true,
+      "accuracy": 0.9766,
+      "macro_f1": 0.9768,
+      "correct": 125,
+      "drop_pp": 0.78
+    },
+    "blur": {
+      "desc": "흐림 (Gaussian r=2)",
+      "seen_in_training": false,
+      "accuracy": 0.9375,
+      "macro_f1": 0.9375,
+      "correct": 120,
+      "drop_pp": 4.69
+    },
+    "noise": {
+      "desc": "노이즈 (sigma=15)",
+      "seen_in_training": false,
+      "accuracy": 0.9766,
+      "macro_f1": 0.9768,
+      "correct": 125,
+      "drop_pp": 0.78
+    },
+    "jpeg20": {
+      "desc": "JPEG 압축 (품질 20)",
+      "seen_in_training": false,
+      "accuracy": 0.9609,
+      "macro_f1": 0.9611,
+      "correct": 123,
+      "drop_pp": 2.35
+    },
+    "low_res": {
+      "desc": "저해상도 (1/4 축소 후 복원)",
+      "seen_in_training": false,
+      "accuracy": 0.9141,
+      "macro_f1": 0.9137,
+      "correct": 117,
+      "drop_pp": 7.03
+    }
+  }
+}

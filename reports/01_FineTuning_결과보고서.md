@@ -121,7 +121,7 @@ and are newly initialized because the shapes did not match:
 - **Best Validation Accuracy: 0.7669 (= 0.7669172932330827, 102/133)**
 - **저장된 모델은 epoch 2 가중치다.** 제공 코드가 `acc > best_acc`(이전보다 *높을 때만*)일 때만 저장하므로, 정확도가 같았던 epoch 3은 저장하지 않았다.
 - Train Loss는 3 epoch 동안 계속 줄었고(0.99 → 0.71), Validation Accuracy는 epoch 2 이후 그대로였다. Backbone을 고정한 채 마지막 층만 학습한 한계로 보고, Backbone까지 학습하는 비교 실험을 §7에서 했다.
-- **Test Accuracy: 미측정.** 제공 코드에는 Test 평가 절차가 없고, 별도로 측정하지 않았다. 혼동행렬·Precision·Recall도 미측정이다.
+- **Test Accuracy:** 제공 코드에는 Test 평가 절차가 없다. 이후 별도 평가 스크립트(`training/evaluate.py`)로 측정한 E0의 Test 결과는 **0.7188 (92/128), Macro F1 0.7109**이다(산출물 9 §5단계).
 
 ### 재현성 확인
 
@@ -193,7 +193,7 @@ Docker 통합 환경(CPU torch 2.5.1)에서도 같은 이미지에 대해 **라�
 | `training_report.json` ↔ 보고서 수치 일치 | 일치 |
 | FastAPI 동기 · 비동기 경로에 학습 모델 연결 | 완료 |
 | 선택 실험 Full Fine-tuning | 실행 · Val Acc 0.9699 (§7) |
-| Test 정량 평가 | **미측정** |
+| Test 정량 평가 | E0 0.7188 · 개선 모델 E4 **0.9844** (산출물 9) |
 
 **한계**
 - 3 epoch Head-only 학습으로 Validation Accuracy 0.7669에 그쳤다. Backbone이 ImageNet 일반 사물 특징에 고정되어 있어 잎의 병반 같은 세밀한 차이를 충분히 반영하지 못했을 수 있다.
@@ -253,9 +253,15 @@ python -m training.finetune \
 ### 7-5. 비교의 한계 (반드시 함께 읽을 것)
 
 - **두 가지 조건이 함께 바뀌었다.** Backbone 고정 여부와 학습률(0.0002 → 0.00005)이 동시에 달라서, 향상분 전부를 Backbone 학습 효과라고 분리해서 말할 수 없다. 같은 학습률로 한 가지만 바꾼 실험은 하지 않았다.
-- **Validation으로 best epoch를 고른 값이라 실제보다 높게 추정됐을 수 있다.** 독립적인 성능은 Test에서 한 번 확인해야 하는데, **Test Accuracy는 두 모델 모두 미측정**이다.
+- **Validation으로 best epoch를 고른 값이라 실제보다 높게 추정됐을 수 있다.** E1의 Test는 측정하지 않았다(최종 모델을 E4로 정한 뒤 E4와 비교용 E0만 Test 평가함).
 - 단일 실행(seed 42)이고 Validation이 133장이라 1장 차이가 0.75%p다.
 - **서비스(동기·비동기 API)는 계속 E0 모델(`artifacts/beans_resnet18`)을 쓴다.** 산출물 2~7의 API·DB·성능 결과는 모두 E0 기준이다. E1으로 바꾸려면 `.env`의 `MODEL_PATH`를 바꾸고 `docker compose up -d --force-recreate web worker`를 실행한 뒤 다시 검증해야 한다(미실시).
+
+---
+
+## 8. 이후 성능 개선 (요약)
+
+이 보고서의 두 실험 이후, 원인을 하나씩 확인하며 추가 실험(E2~E4)을 했다. 최종 모델 E4(LP-FT + 데이터 증강 + 코사인 학습률)는 **Val 0.9850 · Test 0.9844 · 강건성 평균 0.9570**이다. 전체 과정 → [산출물 9](09_성능개선_실험보고서.md)
 
 ---
 

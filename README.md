@@ -61,7 +61,7 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 
 ## ✨ 주요 기능
 
-- 🧠 **Fine-tuning과 성능 개선** — 제공 코드의 약점을 하나씩 찾아 고쳐 Val Acc **0.7669 → 0.9850**
+- 🧠 **Fine-tuning과 성능 개선** — 제공 코드의 약점을 하나씩 찾아 고쳐 Test 정확도 **0.7188 → 0.9844**, 변형 이미지에서도 평균 0.9570
 - ⚡ **동기 분류** — `POST /api/sync/classify/` → 200 + 결과
 - 📨 **비동기 분류** — `POST /api/async/classify/` → 202 + `job_id` → 상태 조회로 결과 확인
 - 🗃️ **Redis 캐시** — 이미지 내용(sha256)과 모델 경로 기준으로 600초 동안 결과 재사용, 캐시 · 브로커 · 결과를 DB 번호로 분리
@@ -80,12 +80,17 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 
 ### 모델
 
-| 모델 | Best Validation Accuracy | 상태 |
-|---|:---:|---|
-| 제공 코드 그대로 (Head-only, 3 epoch) | 0.7669 (102/133) | 필수 실험 · **현재 서비스에 연결된 모델** |
-| **개선 모델 (LP-FT + 증강 + 코사인 학습률)** | **0.9850 (131/133)** | 성능 개선 실험의 최고 결과 · Test 평가 예정 |
+| 모델 | Validation (133장) | **Test (128장)** | Macro F1 (Test) | 강건성 평균 | 상태 |
+|---|---:|---:|---:|---:|---|
+| E0 제공 코드 그대로 | 0.7669 | 0.7188 | 0.7109 | 0.7031 | 필수 실험 · **현재 서비스에 연결된 모델** |
+| **E4 개선 모델** | **0.9850** | **0.9844** | **0.9845** | **0.9570** | 최종 모델 (서비스 적용 전) |
 
-**같은 Validation 133장 기준으로 +21.81%p**(정답 102 → 131장) 올렸습니다. 무엇이 약했고 어떻게 고쳤는지는 바로 아래 [성능 개선 과정](#-성능-개선-과정)에 단계별로 정리했습니다.
+- **Test 기준 +26.56%p** (정답 92 → 126장). Test는 최종 모델을 Val로 정한 뒤 **한 번만** 평가했습니다.
+- E4는 Val(0.9850)과 Test(0.9844)가 거의 같아서, **Validation에 맞춰 고른 점수가 아니라는 것**도 확인했습니다.
+- 틀린 2장은 모두 **각진잎반점병 ↔ 녹병** 사이였고, 정상 잎(healthy)은 42장 모두 맞혔습니다.
+- **강건성 평균**은 Test 사진에 밝기 · 흐림 · 노이즈 · 저해상도 등 8가지 변형을 줬을 때의 평균 정확도입니다.
+
+무엇이 약했고 어떻게 고쳤는지는 바로 아래 [성능 개선 과정](#-성능-개선-과정)에 단계별로 정리했습니다.
 
 ### 응답 시간 (5회 중앙값, CPU 추론)
 
@@ -116,13 +121,16 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 | ① | 학습이 덜 됨 (loss 0.71에서 멈춤) | 학습률 ↑ · epoch ↑ | 0.9398 |
 | ② | Backbone이 콩잎 특징을 모름 | Backbone까지 학습 | 0.9699 |
 | ③ | BatchNorm 통계가 학습 중 흔들림 | 코드 테스트로 확인, `--freeze-bn` 옵션 추가 | (실험 예정) |
-| ④ | 과적합 방지 장치가 없음 | LP-FT + 데이터 증강 + 코사인 학습률 | **0.9850** |
+| ④ | 과적합 방지 장치가 없음 | LP-FT + 데이터 증강 + 코사인 학습률 | **0.9850** (Test 0.9844) |
 
-- 가장 큰 원인은 **덜 학습된 것**(+17.29%p)이었고, 그다음은 **Backbone 고정**(학습률을 같게 두고 비교하면 +19.55%p)이었습니다.
-- 증강이 없으면 Full 학습이 epoch 1 이후 계속 나빠졌는데(과적합 신호), 증강과 코사인 학습률을 쓰자 후반까지 유지·상승했습니다.
-- ⚠️ Val이 133장이라 1장이 0.75%p입니다. ④는 기법 여러 개를 한꺼번에 적용해서 각각의 효과는 아직 분리하지 못했습니다. 최종 성능은 **Test 평가로 확인할 예정**이고, 서비스에는 아직 E0 모델이 연결되어 있습니다.
+- 원인 ① **덜 학습된 것**(+17.29%p)과 ② **Backbone 고정**(학습률을 같게 두고 비교하면 +19.55%p)이 비슷하게 컸습니다.
+- 증강이 없으면 Full 학습이 epoch 1 이후 계속 나빠졌는데(과적합 신호), 증강과 코사인 학습률을 쓰자 후반까지 유지·상승했습니다. Train과 Val 차이도 2.62%p → 1.11%p로 줄었습니다.
+- **Test(0.9844)와 강건성 평가**로 최종 확인했습니다. 가장 약한 변형은 **저해상도(−7.03%p)와 흐림(−4.69%p)**으로, 작은 반점 무늬가 지워지는 조건입니다.
+- ⚠️ ④는 기법 여러 개를 한꺼번에 적용해서 각각의 효과는 아직 분리하지 못했습니다. 서비스에는 아직 E0 모델이 연결되어 있습니다.
 
-약점별 원리 · 실험 조건 · 논문 근거 · 주의할 점 → **[산출물 9 성능 개선 실험 보고서](reports/09_성능개선_실험보고서.md)**
+<img src="reports/figures/robustness_chart.png" width="900">
+
+약점별 원리 · 실험 조건 · Test · 강건성 평가 · 논문 근거 → **[산출물 9 성능 개선 실험 보고서](reports/09_성능개선_실험보고서.md)**
 
 ## 🏗️ 시스템 아키텍처
 
@@ -197,7 +205,10 @@ python -u -m training.finetune_v2 --output artifacts/e4_lpft_aug_cosine \
   --augment --scheduler cosine --warmup-epochs 1 --patience 5
 
 # 평가 (정확도 · 클래스별 Precision/Recall/F1 · 혼동행렬 · 틀린 이미지 목록)
-python -m training.evaluate --model artifacts/e4_lpft_aug_cosine --split val
+python -m training.evaluate --model artifacts/e4_lpft_aug_cosine --split test --out reports/data/eval_test_e4.json
+
+# 강건성 평가 (밝기 · 흐림 · 노이즈 · JPEG · 저해상도 등 8가지 변형)
+python -m training.robustness --model artifacts/e4_lpft_aug_cosine --split test --out reports/data/robustness_e4.json
 
 # Backbone까지 학습 (평가가이드 선택 실험, 별도 폴더에 저장)
 python -m training.finetune --data dataset --output artifacts/beans_resnet18_full \
@@ -284,8 +295,8 @@ curl -s http://127.0.0.1:8000/api/async/jobs/1/
 # 모의 통합 테스트 (가짜 모델 · SQLite) → 4 passed
 docker compose exec web python -m pytest -q tests/test_api.py
 
-# 학습 · 평가 스크립트 단위 테스트 (작은 가짜 모델, 인터넷 불필요) → 6 passed
-python -m pytest -q tests/test_training.py
+# 학습 · 평가 · 강건성 스크립트 단위 테스트 (작은 가짜 모델, 인터넷 불필요) → 10 passed
+python -m pytest -q tests/test_training.py tests/test_robustness.py
 
 # 동기 · 비동기 · 캐시 응답 시간 측정 → reports/data/timings.csv
 python scripts/measure_timings.py
@@ -296,7 +307,9 @@ python scripts/measure_timings.py
 | 실환경 통합 테스트 | **22건 PASS** — 3클래스 분류, 202 → done, 400 · 404 · 413, 캐시 MISS → HIT, worker 정지 시 `queued` 유지 → 재시작 후 처리, Redis DB 역할, DB 스키마, Swagger |
 | 모의 테스트 | 01 `1 passed` · 02 `4 passed` (503 · `failed` 기록 포함) |
 | 학습 · 평가 코드 테스트 | `6 passed` — 지표 계산, 모든 옵션으로 학습 후 서비스 방식으로 로드, Backbone·BN 고정 확인, BN 통계 변화(약점 ③ 가설), 평가 값과 학습 기록 일치 |
-| 오류 기록 | 실제로 겪은 오류 8건의 원인 · 조치 · 재검증 |
+| 강건성 코드 테스트 | `4 passed` — 변형이 크기를 유지하며 실제로 바뀌는지, 노이즈 재현성, 색조 변형 제외, 평균 계산 |
+| 모델 Test 평가 | E4 **0.9844** (126/128) · Macro F1 0.9845 · 강건성 평균 0.9570 |
+| 오류 기록 | 실제로 겪은 오류 9건의 원인 · 조치 · 재검증 |
 
 자세한 내용 → [산출물 7](reports/07_기능테스트_오류분석.md)
 
@@ -315,11 +328,13 @@ plant-disease-vision-api/
 ├── training/
 │   ├── finetune.py            # 제공 학습 코드 (수정 안 함)
 │   ├── finetune_v2.py         # 개선 학습 (증강 · LP-FT · 코사인 등)
-│   └── evaluate.py            # 평가 (정확도 · F1 · 혼동행렬)
+│   ├── evaluate.py            # 평가 (정확도 · F1 · 혼동행렬)
+│   └── robustness.py          # 강건성 평가 (8가지 변형)
 ├── templates/ · static/       # 동기 · 비동기 화면
 ├── tests/
 │   ├── test_api.py            # 통합 모의 테스트 (02)
-│   └── test_training.py       # 학습 · 평가 코드 테스트
+│   ├── test_training.py       # 학습 · 평가 코드 테스트
+│   └── test_robustness.py     # 강건성 평가 코드 테스트
 ├── test_api.py                # 동기 API 모의 테스트 (01)
 ├── scripts/measure_timings.py # 성능 측정
 ├── reports/                   # 산출물 1~9 · 증빙 · 그림 · 측정 원본
@@ -340,9 +355,9 @@ plant-disease-vision-api/
 | 4 | [DB 구조 · 작업이력](reports/04_DB_구조_작업이력.md) | `image_jobs` ERD · 상태 전이 · 실제 행 |
 | 5 | [AI 버튼 처리흐름](reports/05_AI버튼_처리흐름.md) | 동기 · 비동기 시퀀스도 · 코드 대응표 |
 | 6 | [성능 비교 보고서](reports/06_성능비교_보고서.md) | 응답 시간 · 캐시 효과 · 측정 한계 |
-| 7 | [기능 테스트 · 오류 분석](reports/07_기능테스트_오류분석.md) | 테스트 22건 · 오류 8건 |
+| 7 | [기능 테스트 · 오류 분석](reports/07_기능테스트_오류분석.md) | 테스트 22건 · 오류 9건 |
 | 8 | [최종 기술보고서](reports/08_최종기술보고서.md) | 전체 요약 · OpenCV 개선 제안 · 한계 |
-| 9 | [성능 개선 실험 보고서](reports/09_성능개선_실험보고서.md) | 약점 4가지 · 실험 E0~E4 · 논문 근거 |
+| 9 | [성능 개선 실험 보고서](reports/09_성능개선_실험보고서.md) | 약점 4가지 · 실험 E0~E4 · Test · 강건성 · 논문 근거 |
 
 증빙 캡처 `reports/evidence/` · 그림 `reports/figures/` · 측정 원본 `reports/data/`
 
@@ -361,14 +376,17 @@ plant-disease-vision-api/
 **한계**
 
 - 서비스에 연결된 모델은 아직 제공 코드 그대로인 E0(Val Acc 0.7669)입니다. 실제로 `bean_rust` 사진을 `healthy`로 틀린 사례가 있습니다. 개선 모델(E4, 0.9850)은 서비스에 적용하기 전입니다.
-- Test Accuracy와 클래스별 지표(Precision · Recall · 혼동행렬)는 측정하지 않았습니다.
+- 최종 모델(E4)도 **저해상도(0.9141)와 흐림(0.9375)**에서 정확도가 떨어집니다. 멀리서 찍거나 초점이 안 맞은 사진에 약합니다.
+- Test는 128장, 한 번의 분할 · 한 개 seed 결과입니다. 데이터가 한 지역(우간다) 현장 사진이라 다른 환경에서의 성능은 알 수 없습니다.
 - 단일 사용자의 순차 요청만 측정했고, 동시 요청 처리량은 측정하지 않았습니다.
 - worker가 root 권한으로 실행되고, DB 비밀번호가 `compose.yaml`에 그대로 들어 있습니다. 로컬 실습 환경 기준입니다.
 
 **향후 과제**
 
 - [x] 학습률을 같게 두고 Backbone 고정 여부만 바꿔서 Full Fine-tuning 효과를 분리해 확인 (E3, +19.55%p)
-- [ ] 최종 모델(E4)을 Test 데이터로 1회 평가 (정확도 · 혼동행렬)
+- [x] 최종 모델(E4)을 Test 데이터로 1회 평가 (0.9844, Macro F1 0.9845)
+- [x] 강건성 평가 (평균 0.9570)
+- [ ] 흐림 · 저해상도 증강을 추가하고, 다른 변형으로 다시 공정하게 평가
 - [ ] 개선 모델을 서비스에 적용하고 다시 검증
 - [ ] Grad-CAM으로 오분류 원인 분석 → OpenCV HSV · 잎 ROI 규칙 실험 (설계만 완료, [산출물 8](reports/08_최종기술보고서.md) §8)
 - [ ] 동시 요청 부하 테스트
