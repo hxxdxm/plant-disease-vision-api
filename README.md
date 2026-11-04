@@ -8,7 +8,7 @@ Hugging Face `microsoft/resnet-18`을 콩잎 데이터로 Fine-tuning하고, Fas
 | 모델 | `microsoft/resnet-18` → Head-only Fine-tuning (3클래스) |
 | 데이터 | [AI-Lab-Makerere/beans](https://huggingface.co/datasets/AI-Lab-Makerere/beans) |
 | 서빙 | FastAPI · Celery · Redis · PostgreSQL · Docker Compose |
-| 결과 | **Validation Accuracy 0.7669** · 캐시 HIT 시 응답 **93% 감소** · 비동기 접수 응답 **68% 단축** |
+| 결과 | Val Acc **0.7669**(Head-only, 서비스) → **0.9699**(Full Fine-tuning 선택 실험) · 캐시 HIT 응답 **93% 감소** · 비동기 접수 응답 **68% 단축** |
 
 ![아키텍처](reports/figures/architecture.png)
 
@@ -61,6 +61,7 @@ echo "MODEL_PATH=artifacts/beans_resnet18" > .env     # 또는 cp .env.example .
 
 - 결과: `artifacts/beans_resnet18/` (`config.json`, `model.safetensors`, `preprocessor_config.json`, `training_report.json`)
 - GPU가 없으면 `docker compose run --rm trainer`로 컨테이너에서 학습할 수도 있습니다(CPU).
+- 선택 실험(Full Fine-tuning): `--freeze-backbone`을 빼고 `--lr 0.00005 --output artifacts/beans_resnet18_full` → Val Acc 0.9699
 - 학습된 가중치는 저장소에 포함하지 않습니다. 위 명령으로 다시 만들거나 허용된 경로로 따로 전달합니다.
 
 ## 4. 실행
@@ -134,7 +135,7 @@ python scripts/measure_timings.py
 | `reports/06_성능비교_보고서.md` | 응답시간 · 캐시 효과 비교 |
 | `reports/07_기능테스트_오류분석.md` | 테스트 17건 · 오류 8건 |
 | `reports/08_최종기술보고서.md` | 종합 보고서 · 개선 제안 |
-| `reports/data/` | `training_report.json`, `timings.csv` |
+| `reports/data/` | `training_report.json`(Head-only), `training_report_full.json`(Full), `timings.csv` |
 | `reports/evidence/` | 실행 캡처 · 학습 로그 |
 | `reports/figures/` | 아키텍처 · 시퀀스 · ERD · 성능 그래프 (Mermaid 원본 `.mmd` 포함) |
 

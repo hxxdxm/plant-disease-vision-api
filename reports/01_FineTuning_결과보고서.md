@@ -9,7 +9,8 @@
 | 학습 코드 | 01 문서 제공 `training/finetune.py` 원본 그대로 사용 (수정 없음) |
 | 모델 저장 위치 | `artifacts/beans_resnet18/` |
 | 실행일 · 환경 | 2026-11-04 · WSL2 Ubuntu 22.04 · Python 3.11.0rc1 · torch 2.5.1+cu121 · transformers 4.57.6 · RTX 3060 12GB (학습은 GPU) |
-| 실험 상태 | **실행 완료** (동일 명령 2회 실행, 결과 동일) |
+| 실험 상태 | **실행 완료** (동일 명령 2회 실행, 결과 동일) · 선택 실험 Full Fine-tuning도 실행 (§7) |
+| 핵심 결과 | Head-only Best Val Acc **0.7669** (서비스 모델) / Full Fine-tuning **0.9699** (같은 Validation 133장) |
 
 ---
 
@@ -119,7 +120,7 @@ and are newly initialized because the shapes did not match:
 
 - **Best Validation Accuracy: 0.7669 (= 0.7669172932330827, 102/133)**
 - **저장된 모델은 epoch 2 가중치다.** 제공 코드가 `acc > best_acc`(이전보다 *높을 때만*)일 때만 저장하므로, 정확도가 같았던 epoch 3은 저장하지 않았다.
-- Train Loss는 3 epoch 동안 계속 줄었고(0.99 → 0.71), Validation Accuracy는 epoch 2 이후 그대로였다. 학습 횟수가 짧아 아직 수렴 전일 가능성이 있다. 이에 대한 추가 실험은 §7에 정리했다.
+- Train Loss는 3 epoch 동안 계속 줄었고(0.99 → 0.71), Validation Accuracy는 epoch 2 이후 그대로였다. Backbone을 고정한 채 마지막 층만 학습한 한계로 보고, Backbone까지 학습하는 비교 실험을 §7에서 했다.
 - **Test Accuracy: 미측정.** 제공 코드에는 Test 평가 절차가 없고, 별도로 측정하지 않았다. 혼동행렬·Precision·Recall도 미측정이다.
 
 ### 재현성 확인
@@ -191,6 +192,7 @@ Docker 통합 환경(CPU torch 2.5.1)에서도 같은 이미지에 대해 **라�
 | Head-only Fine-tuning 실행 · 모델 저장 | 완료 |
 | `training_report.json` ↔ 보고서 수치 일치 | 일치 |
 | FastAPI 동기 · 비동기 경로에 학습 모델 연결 | 완료 |
+| 선택 실험 Full Fine-tuning | 실행 · Val Acc 0.9699 (§7) |
 | Test 정량 평가 | **미측정** |
 
 **한계**
@@ -201,14 +203,59 @@ Docker 통합 환경(CPU torch 2.5.1)에서도 같은 이미지에 대해 **라�
 
 ---
 
-## 7. 선택 실험 — Full Fine-tuning 비교
+## 7. 선택 실험 — Full Fine-tuning 비교 (실행 완료)
 
-| 실험 | 실행 | 조건 | Validation Accuracy | 결론 |
-|---|---|---|---:|---|
-| E0: Head-only (기준선) | **실행** | 위 §2 설정 | **0.7669** | 기준선 |
-| E1: Full Fine-tuning | 미실시 | `--freeze-backbone` 없이, 별도 폴더 `artifacts/beans_resnet18_full` | 미측정 | 효과 미검증 |
+평가가이드 §6-1 B의 명령을 그대로 실행했다. **`training/finetune.py`는 수정하지 않았고** 실행 옵션만 바꿨다. 결과는 별도 폴더에 저장해 기준선(E0) 파일을 덮어쓰지 않았다.
 
-Full Fine-tuning은 선택 실험이다. 실행하지 않았으므로 성능 향상을 주장하지 않는다.
+```bash
+python -m training.finetune \
+  --data dataset \
+  --output artifacts/beans_resnet18_full \
+  --epochs 3 \
+  --batch-size 8 \
+  --lr 0.00005 2>&1 | tee reports/evidence/train_log_full.txt
+```
+
+### 7-1. 조건 비교
+
+| 항목 | E0 Head-only | E1 Full Fine-tuning |
+|---|---|---|
+| `--freeze-backbone` | 사용 (분류 헤드만 학습) | **미사용 (전체 가중치 학습)** |
+| learning rate | 0.0002 (기본값) | **0.00005** (전체 학습이라 낮게, 가이드 권장값) |
+| epochs · batch · seed | 3 · 8 · 42 | 3 · 8 · 42 |
+| 데이터 | Train 1,034 / Val 133 | **같은 분할** |
+| 저장 폴더 | `artifacts/beans_resnet18` | `artifacts/beans_resnet18_full` |
+
+### 7-2. Epoch별 결과
+
+| Epoch | E0 Loss | E0 Val Acc | E1 Loss | E1 Val Acc (정답 수) |
+|---:|---:|---:|---:|---:|
+| 1 | 0.9924 | 0.6617 | 0.4403 | **0.9699 (129/133)** ← 저장 |
+| 2 | 0.8108 | **0.7669** ← 저장 | 0.1558 | 0.9624 (128/133) |
+| 3 | 0.7078 | 0.7669 | 0.0861 | 0.9549 (127/133) |
+
+### 7-3. 비교 결과
+
+| 실험 | 실행 | Best Validation Accuracy | 저장 모델 | 결론 |
+|---|---|---:|---|---|
+| E0: Head-only (기준선) | 실행 | 0.7669 (102/133) | epoch 2 | 기준선 · **서비스 모델** |
+| E1: Full Fine-tuning | **실행** | **0.9699 (129/133)** | epoch 1 | 같은 Validation에서 **0.2030 (20.30%p) 상승**, 정답 27장 증가 |
+
+원본: `data/training_report_full.json`, 로그: `evidence/train_log_full.txt`
+
+![Full Fine-tuning 결과](evidence/train_result_full.png)
+
+### 7-4. 해석
+
+- **Backbone까지 학습하자 정확도가 크게 올랐다.** ImageNet 일반 사물 특징에 고정된 Backbone으로는 병반·녹병 반점 같은 잎의 세밀한 차이를 구분하기 어려웠고, Backbone을 콩잎 데이터에 맞게 조정하자 첫 epoch부터 0.9699에 도달했다. §6에 적은 Head-only의 한계를 실험으로 확인한 결과다.
+- **과적합 신호가 있다.** E1의 Train Loss는 0.4403 → 0.0861로 계속 줄었지만, Validation Accuracy는 0.9699 → 0.9624 → 0.9549로 조금씩 떨어졌다. 학습 데이터에 점점 맞춰지면서 처음 보는 데이터에 대한 성능이 줄어드는 패턴이다. 제공 코드가 Validation 기준 best(epoch 1)만 저장하므로, 저장된 모델은 가장 좋았던 시점의 것이다.
+
+### 7-5. 비교의 한계 (반드시 함께 읽을 것)
+
+- **두 가지 조건이 함께 바뀌었다.** Backbone 고정 여부와 학습률(0.0002 → 0.00005)이 동시에 달라서, 향상분 전부를 Backbone 학습 효과라고 분리해서 말할 수 없다. 같은 학습률로 한 가지만 바꾼 실험은 하지 않았다.
+- **Validation으로 best epoch를 고른 값이라 실제보다 높게 추정됐을 수 있다.** 독립적인 성능은 Test에서 한 번 확인해야 하는데, **Test Accuracy는 두 모델 모두 미측정**이다.
+- 단일 실행(seed 42)이고 Validation이 133장이라 1장 차이가 0.75%p다.
+- **서비스(동기·비동기 API)는 계속 E0 모델(`artifacts/beans_resnet18`)을 쓴다.** 산출물 2~7의 API·DB·성능 결과는 모두 E0 기준이다. E1으로 바꾸려면 `.env`의 `MODEL_PATH`를 바꾸고 `docker compose up -d --force-recreate web worker`를 실행한 뒤 다시 검증해야 한다(미실시).
 
 ---
 
@@ -218,3 +265,4 @@ Full Fine-tuning은 선택 실험이다. 실행하지 않았으므로 성능 향
 - `evidence/train_result_model_folder.png` — 모델 파일 4개와 training_report.json
 - `data/training_report.json` — 학습 기록 원본 복사본
 - `evidence/01_sync_curl.png`, `evidence/01_sync_ui.png` — 서비스 연결 확인
+- `evidence/train_log_full.txt`, `evidence/train_result_full.png`, `data/training_report_full.json` — Full Fine-tuning 비교 실험
