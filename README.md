@@ -1,8 +1,17 @@
 <div align="center">
 
-# 🌱 콩잎 질병 분류 · Fine-tuning부터 동기 · 비동기 서빙까지
+# 🌱 Plant Disease Vision API
 
-**ResNet-18 · FastAPI · Redis · Celery · PostgreSQL · Docker Compose**
+**콩잎 사진 한 장으로 잎의 질병을 분류하는 AI 웹 서비스**
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1-EE4C2C?logo=pytorch&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/🤗_Transformers-ResNet18-FFD21E)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
+![Celery](https://img.shields.io/badge/Celery-5.6-37814A?logo=celery&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7.4-DC382D?logo=redis&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker_Compose-4_services-2496ED?logo=docker&logoColor=white)
 
 </div>
 
