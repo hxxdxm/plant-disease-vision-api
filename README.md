@@ -131,6 +131,8 @@ ResNet18을 콩잎 데이터로 Fine-tuning하고, FastAPI로 **동기 · 비동
 
 <img src="reports/figures/robustness_chart.png" width="900">
 
+실험 5개(E0 · E1 · E2 · E3 · E4) 전체 비교표 · Test 혼동행렬 · 클래스별 F1 → **[산출물 9 · 최종 모델 평가](reports/09_성능개선_실험보고서.md#최종-모델-평가--모든-실험-비교)**
+
 약점별 원리 · 실험 조건 · Test · 강건성 평가 · 논문 근거 → **[산출물 9 성능 개선 실험 보고서](reports/09_성능개선_실험보고서.md)**
 
 ## 🏗️ 시스템 아키텍처
