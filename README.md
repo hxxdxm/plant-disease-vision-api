@@ -133,7 +133,7 @@ python scripts/measure_timings.py
 | `reports/04_DB_구조_작업이력.md` | `image_jobs` 구조 · 실제 행 |
 | `reports/05_AI버튼_처리흐름.md` | 동기 · 비동기 시퀀스 |
 | `reports/06_성능비교_보고서.md` | 응답시간 · 캐시 효과 비교 |
-| `reports/07_기능테스트_오류분석.md` | 테스트 17건 · 오류 8건 |
+| `reports/07_기능테스트_오류분석.md` | 실환경 테스트 22건 · 오류 8건 |
 | `reports/08_최종기술보고서.md` | 종합 보고서 · 개선 제안 |
 | `reports/data/` | `training_report.json`(Head-only), `training_report_full.json`(Full), `timings.csv` |
 | `reports/evidence/` | 실행 캡처 · 학습 로그 |

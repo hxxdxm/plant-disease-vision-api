@@ -17,6 +17,10 @@
 | WEB-02 | GET | `/vision/async/` | 없음 | 200 | HTML | — | O |
 | STATIC | GET | `/static/style.css` | 없음 | 200 / 304 | CSS | — | O |
 
+- **422 Validation Error:** `image` 필드를 빼고 보내면 FastAPI가 자동으로 422를 돌려준다. Swagger 문서에 응답 형식이 표시되며, 제공 코드가 직접 만드는 오류는 아니다(실측하지 않음).
+
+![Swagger API 목록](evidence/03_swagger_list.png)
+
 ---
 
 ## 2. API-01 `GET /health`
@@ -190,5 +194,14 @@ content-type: application/json
 | WEB-01 | `/vision/sync/` 업로드 | 200 | bean_rust_test.0 → bean_rust, 35ms | `evidence/01_sync_ui.png` |
 | WEB-02 | `/vision/async/` 업로드 | 202 → 200 | bean_rust_test.1 → bean_rust, 접수 22ms / 전체 1041ms | `evidence/02_async_ui.png` |
 | API-03-T02 | Redis 큐 장애(모의) | 503 | `test_broker_failure` PASS | `evidence/02_pytest_fail_then_pass.png` |
+| SWG-01 | Swagger 동기 Try it out · `bean_rust_test.41.jpg` | 200 | **healthy 0.4867 (오분류)**, inference 24.89ms, MISS | `evidence/03_swagger_sync.png` |
+| SWG-02 | Swagger 비동기 접수 · `healthy_test.20.jpg` | 202 | job_id 18, queued | `evidence/03_swagger_async_202.png` |
+| SWG-03 | Swagger 상태 조회 · job_id 18 | 200 | done, healthy 0.6793, inference 56.59ms, MISS | `evidence/03_swagger_async_done.png` |
+
+SWG-01은 **API는 정상(200)이지만 모델이 틀린 사례**다. 정답 폴더는 bean_rust인데 healthy로 예측했고 점수도 0.4867로 낮다. 서비스 모델(Head-only)의 Validation Accuracy가 0.7669라 이런 오분류가 생길 수 있으며, API 기능 검증과 모델 정확도는 따로 판단한다.
+
+![Swagger 동기 실행](evidence/03_swagger_sync.png)
+![Swagger 비동기 접수](evidence/03_swagger_async_202.png)
+![Swagger 상태 조회](evidence/03_swagger_async_done.png)
 
 > `202`는 작업 접수, 상태 조회 `200`의 `status:"done"`이 작업 완료다.
